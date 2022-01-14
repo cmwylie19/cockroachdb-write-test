@@ -77,7 +77,7 @@ Delete all of the resources, then the namespace.
 
 Delete tester pod
 ```
-k delete pod crdb-tester --force --grace-period=0
+kubectl delete pod crdb-tester --force --grace-period=0
 ```
 
 delete cockroach manifests
@@ -87,5 +87,7 @@ kubectl delete -f k8s --force --grace-period=0
 
 delete cockroach namespace
 ```
+kubectl delete pods,sa,secrets,cm --all --force --grace-period=0 -n cockroachdb;
+
 kubectl delete ns cockroachdb
 ```
