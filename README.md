@@ -77,7 +77,18 @@ but wait, we queried through a headless service, that could have been pod `cockr
 ```
 k exec -it cockroachdb-2 -n cockroachdb -- cockroach sql --insecure --execute="SELECT * FROM roaches;"
 ```
+output
+```
+            name            |    country
+----------------------------+----------------
+  American Cockroach        | United States
+  Brownbanded Cockroach     | United States
+  Flying Venomous Cockroach | Colombia
+(3 rows)
 
+
+Time: 1ms
+```
 
 ## Cleanup
 Delete all of the resources, then the namespace.
