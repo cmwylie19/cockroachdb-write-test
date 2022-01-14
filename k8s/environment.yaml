@@ -116,7 +116,7 @@ spec:
           - "init"
           - "--insecure"
           - "--host=cockroachdb-0.cockroachdb"
-      restartPolicy: OnFailure
+      restartPolicy: Never
 ---
 apiVersion: apps/v1
 kind: StatefulSet

@@ -72,6 +72,13 @@ Time: 71ms
 
 You can see "Flying Venomous Cockroach" from Colombia was inserted into the roaches database. That means that the write worked on the StatefulSet slave.
 
+## Extra Credit
+but wait, we queried through a headless service, that could have been pod `cockroachdb-1` that answered the request. The same pod we used to insert. Lets make sure that the data was properly replicated in the `StatefulSet` by querying all in the database from the `cockroachdb-2` pod.   
+```
+k exec -it cockroachdb-2 -n cockroachdb -- cockroach sql --insecure --execute="SELECT * FROM roaches;"
+```
+
+
 ## Cleanup
 Delete all of the resources, then the namespace.
 
