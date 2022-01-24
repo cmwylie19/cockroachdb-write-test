@@ -45,19 +45,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  # This service only exists to create DNS entries for each pod in the stateful
-  # set such that they can resolve each other's IP addresses. It does not
-  # create a load-balanced ClusterIP and should not be used directly by clients
-  # in most circumstances.
   name: cockroachdb
   namespace: cockroachdb
   labels:
     app: cockroachdb
   annotations:
-    # Use this annotation in addition to the actual publishNotReadyAddresses
-    # field below because the annotation will stop being respected soon but the
-    # field is broken in some versions of Kubernetes:
-    # https://github.com/kubernetes/kubernetes/issues/58662
     service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
     # Enable automatic monitoring of all instances when Prometheus is running in the cluster.
     prometheus.io/scrape: "true"
@@ -71,9 +63,6 @@ spec:
   - port: 8080
     targetPort: 8080
     name: http
-  # We want all pods in the StatefulSet to have their addresses published for
-  # the sake of the other CockroachDB pods even before they're ready, since they
-  # have to be able to talk to each other in order to become ready.
   publishNotReadyAddresses: true
   clusterIP: None
   selector:
@@ -92,40 +81,13 @@ spec:
       app: cockroachdb
   maxUnavailable: 1
 ---
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: cluster-init
-  namespace: cockroachdb
-  labels:
-    app: cockroachdb
-spec:
-  template:
-    spec:
-      # Sleep 120s to let the pods in the StatefulSet become ready
-      initContainers:
-        - name: get-some-sleep
-          image: alpine
-          command: ["sleep","35s"]
-      containers:
-      - name: cluster-init
-        image: cockroachdb/cockroach:v21.2.4
-        imagePullPolicy: IfNotPresent
-        command:
-          - "/cockroach/cockroach"
-          - "init"
-          - "--insecure"
-          - "--host=cockroachdb-0.cockroachdb"
-      restartPolicy: Never
----
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: cockroachdb
   namespace: cockroachdb
 spec:
-  serviceName: "cockroachdb"
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: cockroachdb
@@ -151,10 +113,6 @@ spec:
       - name: cockroachdb
         image: cockroachdb/cockroach:v21.2.4
         imagePullPolicy: IfNotPresent
-        # TODO: Change these to appropriate values for the hardware that you're running. You can see
-        # the resources that can be allocated on each of your Kubernetes nodes by running:
-        #   kubectl describe nodes
-        # Note that requests and limits should have identical values.
         resources:
           requests:
             cpu: "2"
@@ -167,20 +125,6 @@ spec:
           name: grpc
         - containerPort: 8080
           name: http
-# We recommend that you do not configure a liveness probe on a production environment, as this can impact the availability of production databases.
-#       livenessProbe:
-#         httpGet:
-#           path: "/health"
-#           port: http
-#         initialDelaySeconds: 30
-#         periodSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: "/health?ready=1"
-            port: http
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          failureThreshold: 2
         volumeMounts:
         - name: datadir
           mountPath: /cockroach/cockroach-data
@@ -200,34 +144,38 @@ spec:
         command:
           - "/bin/bash"
           - "-ecx"
-          # The use of qualified `hostname -f` is crucial:
-          # Other nodes aren't able to look up the unqualified hostname.
-          - exec
-            /cockroach/cockroach
-            start
-            --logtostderr
-            --insecure
-            --advertise-host $(hostname -f)
-            --http-addr 0.0.0.0
-            --join cockroachdb-0.cockroachdb,cockroachdb-1.cockroachdb,cockroachdb-2.cockroachdb
-            --cache $(expr $MEMORY_LIMIT_MIB / 4)MiB
-            --max-sql-memory $(expr $MEMORY_LIMIT_MIB / 4)MiB
+          - exec /cockroach/cockroach start-single-node --insecure --http-addr=0.0.0.0 --listen-addr=0.0.0.0:26257
+          # - /cockroach/cockroach start-single-node --insecure  --listen-addr=localhost:26257 --http-addr=localhost:8080  --background
+
       # No pre-stop hook is required, a SIGTERM plus some time is all that's
       # needed for graceful shutdown of a node.
       terminationGracePeriodSeconds: 60
       volumes:
-      - name: datadir
-        persistentVolumeClaim:
-          claimName: datadir
-  podManagementPolicy: Parallel
-  updateStrategy:
-    type: RollingUpdate
-  volumeClaimTemplates:
-  - metadata:
-      name: datadir
-    spec:
-      accessModes:
-        - "ReadWriteOnce"
-      resources:
-        requests:
-          storage: 100Gi
+        - name: datadir
+          persistentVolumeClaim:
+            claimName: crdb-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: crdb-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/crdb
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crdb-pvc
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+
