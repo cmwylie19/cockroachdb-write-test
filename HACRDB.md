@@ -34,14 +34,14 @@ This means that application will continue running even after a system hosting on
 
 ---
 ## CockroachDB Availability Testing
-This demo tests availability of CockroachDB using different deployment modes. Secondly, this demonstrates how to use configure CockroachDB to remain available during failure and recover after failures. For our tests, we have CockroachDB deployed behind a service so we can easily test availability of CockroachDB by sending requests through the service.
+This demo tests availability of CockroachDB using different deployment modes. Secondly, this demonstrates how to configure CockroachDB to remain available during failure and recover after failures. For our tests, we have CockroachDB deployed behind a service so we can easily test availability of CockroachDB by sending requests through the service.
 
 - CockroachDB with 1 Replica (Deployment)
 - Cockroach with 3 Replicas (StatefulSet)
 
 ---
 
-First create the namespace for our testing:
+First create the namespace for testing:
 ```
 kubectl create ns cockroachdb
 ```
@@ -52,7 +52,7 @@ kubectl run crdb-tester --image=cockroachdb/cockroach:v21.2.4 -n cockroachdb --c
 ```
 
 ## Single Replica Test
-**Note** - _This is not a recommended approach to running cockroachDB since we have purposely removed any redudancy added by the `StatefulSet` and have no option of failover. It is generally recommended that clusters have at least three nodes, to ensure that CockroachDB’s automated replication can keep data safe and available. In this test we deploy CockroachDB through a single replica `Deployment`._
+**Note** - _This is not a recommended approach to running cockroachDB since we have purposely removed any redundancy added by the `StatefulSet` and have no option of failover. It is generally recommended that clusters have at least three nodes, to ensure that CockroachDB’s automated replication can keep data safe and available. In this test we deploy CockroachDB through a single replica `Deployment`._
 
 ### Setup Single Replica CockroachDB
 Deploy the manifests:
@@ -106,7 +106,7 @@ output: ✅
 Time: 36ms
 ```
 **Single Replica- Simulate Failure in pod, read from table**, 
-We complete this test by contually killing the CockroachDB instance and try reading form the `cockroach-public` service while the pod is down. 
+We complete this test by continually killing the CockroachDB instance and try reading form the `cockroach-public` service while the pod is down. 
 ```
 # Terminal 1
 for x in $(seq 999); do kubectl delete pod -l app=cockroachdb -n cockroachdb; sleep 1s; done
@@ -126,7 +126,7 @@ command terminated with exit code 1
 ```
 
 **Single Replica- Stop Simulating Failure and read from table**, 
-We can at least verify that the data was properly written to disk and that it is retreivable after we stop killing the CockroachDB instance. We read from the `cockroach-public` service when the pod comes back up. 
+We can at least verify that the data was properly written to disk and that it is retrievable after we stop killing the CockroachDB instance. We read from the `cockroach-public` service when the pod comes back up. 
 ```
 # Terminal 1
 Control-C, stop killing the cockroachdb pod.
@@ -147,7 +147,7 @@ Time: 21ms
 ```
 
 **Summary**
-In this scenerio where cockraoch is deployed as a single replica where there is no replication. If the instance of the database is down there is simply nothing we can do about it when there is just one replica. This was just for testing purposes. Now in the next test we will let CockroachDB do what it does best and replicate.
+In this scenario where cockraoch is deployed as a single replica where there is no replication. If the instance of the database is down there is simply nothing we can do about it when there is just one replica. This was just for testing purposes. Now in the next test we will let CockroachDB do what it does best and replicate.
 
 
 **Cleanup**
@@ -156,7 +156,7 @@ kubectl delete -f k8s/single-replica-crdb.yaml
 ```
 
 ## 3 Replica Test
-**Note** - This is a recommended approach for running cockroachDB since we have improved redudancy and failover by adding back the `StatefulSet`. We should see Cockroach's automated replication of our data in this test.
+**Note** - This is a recommended approach for running cockroachDB since we have improved redundancy and failover by adding back the `StatefulSet`. We should see Cockroach's automated replication of our data in this test.
 
 
 ### Setup 3 Replica CockroachDB  
@@ -178,7 +178,7 @@ job.batch/cluster-init created
 statefulset.apps/cockroachdb created
 ```
 
-Wait about 40 seconds for the pods become ready after the init function occurs.   
+Wait about 40 seconds for the pods to become ready after the init function occurs.   
 ```
 kubectl get pods -n cockroachdb
 ```
@@ -218,7 +218,7 @@ Time: 36ms
 ```
 
 **3 Replica- Simulate Failure in master pod, still READ data from database**, 
-We complete this test by contually killing the CockroachDB instance and try reading form the `cockroach-public` service while the pod is down. 
+We complete this test by continually killing the CockroachDB instance and try reading form the `cockroach-public` service while the pod is down. 
 ```
 # Terminal 1
 for x in $(seq 999); do kubectl delete pod cockroachdb-0 -n cockroachdb; sleep 1s; done
@@ -239,7 +239,7 @@ Time: 3ms
 ```
 
 **3 Replica- Simulate Failure in master pod, still WRITE data to database**, 
-We complete this test by contually killing the CockroachDB instance and try reading form the `cockroach-public` service while the pod is down. 
+We complete this test by continually killing the CockroachDB instance and try reading from the `cockroach-public` service while the pod is down. 
 ```
 # Terminal 1
 for x in $(seq 999); do kubectl delete pod cockroachdb-0 -n cockroachdb; sleep 1s; done
@@ -278,7 +278,7 @@ Time: 3ms
 ```
 
 **Summary**
-In this scenerio CockroachDB's automated replication is displayed as we continously deleted the master pod. The database continued to function as normal and we were able to read and write data. This is the reason why CockroachDB was built, to ensure your data is safe even during failure.
+In this scenario CockroachDB's automated replication is displayed as we continuously delete the master pod. The database continued to function as normal and we were able to read and write data. This is the reason why CockroachDB was built, to ensure your data is safe even during failure.
 
 
 **Cleanup**
