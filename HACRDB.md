@@ -48,7 +48,7 @@ kubectl create ns cockroachdb
 
 Next, create a new cockroach pod in the `cockroachdb` namespace for interacting with the CockroachDB.
 ```
-kubectl run crdb-tester --image=cockroachdb/cockroach:v21.2.4 --command -- sleep 9999s
+kubectl run crdb-tester --image=cockroachdb/cockroach:v21.2.4 -n cockroachdb --command -- sleep 9999s
 ```
 
 ## Single Replica Test
