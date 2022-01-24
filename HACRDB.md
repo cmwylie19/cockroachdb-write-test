@@ -38,7 +38,6 @@ This demo tests availability of CockroachDB using different deployment modes. Se
 
 - CockroachDB with 1 Replica (Deployment)
 - Cockroach with 3 Replicas (StatefulSet)
-- Cockroach with 3 Replicas (StatefulSet) across 3 different Clusters in 3 different availability zones.
 
 ---
 
